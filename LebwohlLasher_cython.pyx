@@ -26,11 +26,12 @@ import sys
 import time
 import datetime
 import numpy as np
+cimport numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 #=======================================================================
-def initdat(nmax):
+def initdat(int nmax):
     """
     Arguments:
       nmax (int) = size of lattice to create (nmax,nmax).
@@ -41,10 +42,14 @@ def initdat(nmax):
 	Returns:
 	  arr (float(nmax,nmax)) = array to hold lattice.
     """
+    #cdef:
+      #np.ndarray[np.float64_t, ndim=2] arr = np.random.random_sample((nmax,nmax))*2.0*np.pi
+    cdef:
+      np.ndarray[np.float64_t, ndim=2] arr 
     arr = np.random.random_sample((nmax,nmax))*2.0*np.pi
     return arr
 #=======================================================================
-def plotdat(arr, int pflag, int nmax):
+def plotdat( np.ndarray[np.float64_t, ndim=2] arr, int pflag, int nmax):
     """
     Arguments:
 	  arr (float(nmax,nmax)) = array that contains lattice data;
@@ -91,7 +96,7 @@ def plotdat(arr, int pflag, int nmax):
     ax.set_aspect('equal')
     plt.show()
 #=======================================================================
-def savedat(arr, int nsteps, float Ts, float runtime, ratio,energy,order, int nmax):
+def savedat( np.ndarray[np.float64_t, ndim=2] arr, int nsteps, float Ts, float runtime, ratio, energy, order, int nmax):
     """
     Arguments:
 	  arr (float(nmax,nmax)) = array that contains lattice data;
@@ -128,7 +133,7 @@ def savedat(arr, int nsteps, float Ts, float runtime, ratio,energy,order, int nm
         print("   {:05d}    {:6.4f} {:12.4f}  {:6.4f} ".format(i,ratio[i],energy[i],order[i]),file=FileOut)
     FileOut.close()
 #=======================================================================
-def one_energy(arr, int ix, int iy, int nmax):
+def one_energy( np.ndarray[np.float64_t, ndim=2] arr, int ix, int iy, int nmax):
     """
     Arguments:
 	  arr (float(nmax,nmax)) = array that contains lattice data;
@@ -162,7 +167,7 @@ def one_energy(arr, int ix, int iy, int nmax):
     en += 0.5*(1.0 - 3.0*np.cos(ang)**2)
     return en
 #=======================================================================
-def all_energy(arr, int nmax):
+def all_energy( np.ndarray[np.float64_t, ndim=2] arr, int nmax):
     """
     Arguments:
 	  arr (float(nmax,nmax)) = array that contains lattice data;
@@ -179,7 +184,7 @@ def all_energy(arr, int nmax):
             enall += one_energy(arr,i,j,nmax)
     return enall
 #=======================================================================
-def get_order(arr, int nmax):
+def get_order( np.ndarray[np.float64_t, ndim=2] arr, int nmax):
     """
     Arguments:
 	  arr (float(nmax,nmax)) = array that contains lattice data;
@@ -207,7 +212,7 @@ def get_order(arr, int nmax):
     eigenvalues,eigenvectors = np.linalg.eig(Qab)
     return eigenvalues.max()
 #=======================================================================
-def MC_step(arr, float Ts, int nmax):
+def MC_step( np.ndarray[np.float64_t, ndim=2] arr, float Ts, int nmax):
     """
     Arguments:
 	  arr (float(nmax,nmax)) = array that contains lattice data;
