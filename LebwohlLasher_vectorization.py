@@ -72,9 +72,7 @@ def plotdat(arr,pflag,nmax):
     cols = np.zeros((nmax,nmax))
     if pflag==1: # colour the arrows according to energy
         mpl.rc('image', cmap='rainbow')
-        for i in range(nmax):
-            for j in range(nmax):
-                cols[i,j] = one_energy(arr,i,j,nmax)
+        cols = matrix_energy(arr, nmax)
         norm = plt.Normalize(cols.min(), cols.max())
     elif pflag==2: # colour the arrows according to angle
         mpl.rc('image', cmap='hsv')
@@ -111,7 +109,7 @@ def savedat(arr,nsteps,Ts,runtime,ratio,energy,order,nmax):
     """
     # Create filename based on current date and time.
     current_datetime = datetime.datetime.now().strftime("%a-%d-%b-%Y-at-%I-%M-%S%p")
-    filename = "LL-Output-{:s}.txt".format(current_datetime)
+    filename = "./outputs/LL-Output-{:s}.txt".format(current_datetime)
     FileOut = open(filename,"w")
     # Write a header with run parameters
     print("#=====================================================",file=FileOut)
@@ -127,6 +125,46 @@ def savedat(arr,nsteps,Ts,runtime,ratio,energy,order,nmax):
     for i in range(nsteps+1):
         print("   {:05d}    {:6.4f} {:12.4f}  {:6.4f} ".format(i,ratio[i],energy[i],order[i]),file=FileOut)
     FileOut.close()
+#=======================================================================
+def matrix_energy(arr,nmax):
+    """
+    Arguments:
+	  arr (float(nmax,nmax)) = array that contains lattice data;
+	  ix (int) = x lattice coordinate of cell;
+	  iy (int) = y lattice coordinate of cell;
+      nmax (int) = side length of square lattice.
+    Description:
+      Function that computes the energy of a single cell of the
+      lattice taking into account periodic boundaries.  Working with
+      reduced energy (U/epsilon), equivalent to setting epsilon=1 in
+      equation (1) in the project notes.
+	Returns:
+	  en (float) = reduced energy of cell.
+    """
+    energy_matrix = np.zeros((nmax, nmax))
+
+    for ix in range(nmax):
+        for iy in range(nmax):
+
+          en = 0.0
+          ixp = (ix+1)%nmax 
+          ixm = (ix-1)%nmax 
+          iyp = (iy+1)%nmax 
+          iym = (iy-1)%nmax 
+
+          ang = arr[ix,iy]-arr[ixp,iy]
+          en += 0.5*(1.0 - 3.0*np.cos(ang)**2)
+          ang = arr[ix,iy]-arr[ixm,iy]
+          en += 0.5*(1.0 - 3.0*np.cos(ang)**2)
+          ang = arr[ix,iy]-arr[ix,iyp]
+          en += 0.5*(1.0 - 3.0*np.cos(ang)**2)
+          ang = arr[ix,iy]-arr[ix,iym]
+          en += 0.5*(1.0 - 3.0*np.cos(ang)**2)
+
+          energy_matrix[ix,iy] = en
+    
+    return energy_matrix
+
 #=======================================================================
 def one_energy(arr,ix,iy,nmax):
     """
@@ -173,10 +211,14 @@ def all_energy(arr,nmax):
 	Returns:
 	  enall (float) = reduced energy of lattice.
     """
-    enall = 0.0
+
+    energies = matrix_energy(arr,nmax)
+    enall = np.sum(energies.flatten())
+    '''
     for i in range(nmax):
         for j in range(nmax):
             enall += one_energy(arr,i,j,nmax)
+    '''
     return enall
 #=======================================================================
 def get_order(arr,nmax):
@@ -233,6 +275,9 @@ def MC_step(arr,Ts,nmax):
     xran = np.random.randint(0,high=nmax, size=(nmax,nmax))
     yran = np.random.randint(0,high=nmax, size=(nmax,nmax))
     aran = np.random.normal(scale=scale, size=(nmax,nmax))
+    point_picked = np.zeros((nmax,nmax))
+
+    #en0_matrix = 
     for i in range(nmax):
         for j in range(nmax):
             ix = xran[i,j]
