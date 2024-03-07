@@ -130,39 +130,31 @@ def matrix_energy(arr,nmax):
     """
     Arguments:
 	  arr (float(nmax,nmax)) = array that contains lattice data;
-	  ix (int) = x lattice coordinate of cell;
-	  iy (int) = y lattice coordinate of cell;
-      nmax (int) = side length of square lattice.
+    nmax (int) = side length of square lattice.
     Description:
-      Function that computes the energy of a single cell of the
+      Function that computes the energy of a each cell in the
       lattice taking into account periodic boundaries.  Working with
       reduced energy (U/epsilon), equivalent to setting epsilon=1 in
       equation (1) in the project notes.
-	Returns:
-	  en (float) = reduced energy of cell.
+	  Returns:
+	  energy_matrix (float(nmax,nmax)) = array holding reduced energy of each cell.
     """
-    energy_matrix = np.zeros((nmax, nmax))
 
-    for ix in range(nmax):
-        for iy in range(nmax):
+    # Shift array in both directions in x and y
+    arr_shifted_x_p = np.roll(arr, 1, axis=0)
+    arr_shifted_x_m = np.roll(arr, -1, axis=0)
+    arr_shifted_y_p = np.roll(arr, 1, axis=1)
+    arr_shifted_y_m = np.roll(arr, -1, axis=1)
 
-          en = 0.0
-          ixp = (ix+1)%nmax 
-          ixm = (ix-1)%nmax 
-          iyp = (iy+1)%nmax 
-          iym = (iy-1)%nmax 
+    # Calculate contributions from each neighbour
+    en_x_p = 0.5 * (1.0 - 3.0 * np.cos(arr - arr_shifted_x_p) ** 2)
+    en_x_m = 0.5 * (1.0 - 3.0 * np.cos(arr - arr_shifted_x_m) ** 2)
+    en_y_p = 0.5 * (1.0 - 3.0 * np.cos(arr - arr_shifted_y_p) ** 2)
+    en_y_m = 0.5 * (1.0 - 3.0 * np.cos(arr - arr_shifted_y_m) ** 2)
 
-          ang = arr[ix,iy]-arr[ixp,iy]
-          en += 0.5*(1.0 - 3.0*np.cos(ang)**2)
-          ang = arr[ix,iy]-arr[ixm,iy]
-          en += 0.5*(1.0 - 3.0*np.cos(ang)**2)
-          ang = arr[ix,iy]-arr[ix,iyp]
-          en += 0.5*(1.0 - 3.0*np.cos(ang)**2)
-          ang = arr[ix,iy]-arr[ix,iym]
-          en += 0.5*(1.0 - 3.0*np.cos(ang)**2)
+    # Sum up the contributions from all neighbors
+    energy_matrix = en_x_p + en_x_m + en_y_p + en_y_m
 
-          energy_matrix[ix,iy] = en
-    
     return energy_matrix
 
 #=======================================================================
