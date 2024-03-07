@@ -264,6 +264,7 @@ def MC_step(arr,Ts,nmax):
     xran = np.random.randint(0,high=nmax, size=(nmax,nmax))
     yran = np.random.randint(0,high=nmax, size=(nmax,nmax))
     aran = np.random.normal(scale=scale, size=(nmax,nmax))
+    random_comparison = np.random.uniform(0.0,1.0, size = (nmax,nmax))
     point_picked = np.zeros((nmax,nmax))
 
     #en0_matrix = 
@@ -282,7 +283,7 @@ def MC_step(arr,Ts,nmax):
             # exp( -(E_new - E_old) / T* ) >= rand(0,1)
                 boltz = np.exp( -(en1 - en0) / Ts )
 
-                if boltz >= np.random.uniform(0.0,1.0):
+                if boltz >= random_comparison[i,j]:
                     accept += 1
                 else:
                     arr[ix,iy] -= ang
