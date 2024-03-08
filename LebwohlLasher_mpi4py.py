@@ -207,67 +207,53 @@ def get_order(arr,nmax):
     Qab = Qab/(2*nmax*nmax)
     eigenvalues,eigenvectors = np.linalg.eig(Qab)
     return eigenvalues.max()
-
 #=======================================================================
-def MC_step(arr, Ts, nmax, comm):
+def MC_step(arr,Ts,nmax):
     """
-    Parallelized version of the MC_step function using mpi4py.
-
     Arguments:
-      arr (float(nmax,nmax)) = array that contains lattice data;
-      Ts (float) = reduced temperature (range 0 to 2);
+	  arr (float(nmax,nmax)) = array that contains lattice data;
+	  Ts (float) = reduced temperature (range 0 to 2);
       nmax (int) = side length of square lattice.
-      comm (MPI.Comm) = MPI communicator.
-
     Description:
-      Function to perform one parallelized MC step. Each process works on a
-      subset of the lattice.
-
-    Returns:
-      accept/(nmax**2) (float) = acceptance ratio for current MCS.
+      Function to perform one MC step, which consists of an average
+      of 1 attempted change per lattice site.  Working with reduced
+      temperature Ts = kT/epsilon.  Function returns the acceptance
+      ratio for information.  This is the fraction of attempted changes
+      that are successful.  Generally aim to keep this around 0.5 for
+      efficient simulation.
+	Returns:
+	  accept/(nmax**2) (float) = acceptance ratio for current MCS.
     """
-    rank = comm.Get_rank()
-    size = comm.Get_size()
-
-    # Pre-compute some random numbers for the current process
-    scale = 0.1 + Ts
-    accept_local = 0
-    xran = np.random.randint(0, high=nmax, size=(nmax, nmax))
-    yran = np.random.randint(0, high=nmax, size=(nmax, nmax))
-    aran = np.random.normal(scale=scale, size=(nmax, nmax))
-
-    # Divide the lattice among processes
-    local_nmax = nmax // size
-    local_start = rank * local_nmax
-    local_end = (rank + 1) * local_nmax if rank < size - 1 else nmax
-
-    for i in range(local_start, local_end):
+    #
+    # Pre-compute some random numbers.  This is faster than
+    # using lots of individual calls.  "scale" sets the width
+    # of the distribution for the angle changes - increases
+    # with temperature.
+    scale=0.1+Ts
+    accept = 0
+    xran = np.random.randint(0,high=nmax, size=(nmax,nmax))
+    yran = np.random.randint(0,high=nmax, size=(nmax,nmax))
+    aran = np.random.normal(scale=scale, size=(nmax,nmax))
+    for i in range(nmax):
         for j in range(nmax):
-            ix = xran[i, j]
-            iy = yran[i, j]
-            ang = aran[i, j]
-            en0 = one_energy(arr, ix, iy, nmax)
-            arr[ix, iy] += ang
-            en1 = one_energy(arr, ix, iy, nmax)
-
-            if en1 <= en0:
-                accept_local += 1
+            ix = xran[i,j]
+            iy = yran[i,j]
+            ang = aran[i,j]
+            en0 = one_energy(arr,ix,iy,nmax)
+            arr[ix,iy] += ang
+            en1 = one_energy(arr,ix,iy,nmax)
+            if en1<=en0:
+                accept += 1
             else:
-                boltz = np.exp(-(en1 - en0) / Ts)
+            # Now apply the Monte Carlo test - compare
+            # exp( -(E_new - E_old) / T* ) >= rand(0,1)
+                boltz = np.exp( -(en1 - en0) / Ts )
 
-                if boltz >= np.random.uniform(0.0, 1.0):
-                    accept_local += 1
+                if boltz >= np.random.uniform(0.0,1.0):
+                    accept += 1
                 else:
-                    arr[ix, iy] -= ang
-
-    # Perform MPI reduction to get the total acceptance count
-    accept_global = comm.reduce(accept_local, op=MPI.SUM, root=0)
-
-    # Broadcast the acceptance count to all processes
-    accept_global = comm.bcast(accept_global, root=0)
-
-    return accept_global / (nmax * nmax)
-
+                    arr[ix,iy] -= ang
+    return accept/(nmax*nmax)
 #=======================================================================
 def main(program, nsteps, nmax, temp, pflag):
     """
@@ -282,10 +268,6 @@ def main(program, nsteps, nmax, temp, pflag):
     Returns:
       NULL
     """
-    # MPI Initialization
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-
     # Create and initialise lattice
     lattice = initdat(nmax)
     # Plot initial frame of lattice
@@ -302,20 +284,17 @@ def main(program, nsteps, nmax, temp, pflag):
     # Begin doing and timing some MC steps.
     initial = time.time()
     for it in range(1,nsteps+1):
-        ratio[it] = MC_step(lattice,temp,nmax, comm)
+        ratio[it] = MC_step(lattice,temp,nmax)
         energy[it] = all_energy(lattice,nmax)
         order[it] = get_order(lattice,nmax)
     final = time.time()
     runtime = final-initial
     
     # Final outputs
-    if rank == 0:
-        print("{}: Size: {:d}, Steps: {:d}, T*: {:5.3f}: Order: {:5.3f}, Time: {:8.6f} s".format(program, nmax, nsteps, temp, order[nsteps - 1], runtime))
-        # Plot final frame of lattice and generate output file
-        savedat(lattice, nsteps, temp, runtime, ratio, energy, order, nmax)
-        plotdat(lattice, pflag, nmax)
-
-
+    print("{}: Size: {:d}, Steps: {:d}, T*: {:5.3f}: Order: {:5.3f}, Time: {:8.6f} s".format(program, nmax,nsteps,temp,order[nsteps-1],runtime))
+    # Plot final frame of lattice and generate output file
+    savedat(lattice,nsteps,temp,runtime,ratio,energy,order,nmax)
+    plotdat(lattice,pflag,nmax)
 #=======================================================================
 # Main part of program, getting command line arguments and calling
 # main simulation function.
@@ -329,5 +308,5 @@ if __name__ == '__main__':
         PLOTFLAG = int(sys.argv[4])
         main(PROGNAME, ITERATIONS, SIZE, TEMPERATURE, PLOTFLAG)
     else:
-        print("Usage: mpiexec -n <NUM_PROCESSES> python {} <ITERATIONS> <SIZE> <TEMPERATURE> <PLOTFLAG>".format(sys.argv[0]))
+        print("Usage: python {} <ITERATIONS> <SIZE> <TEMPERATURE> <PLOTFLAG>".format(sys.argv[0]))
 #=======================================================================
