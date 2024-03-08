@@ -26,9 +26,11 @@ import sys
 import time
 import datetime
 import numpy as np
-cimport numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+
+cimport numpy as np
+import cython.cimports.libc.math as cmath
 
 #=======================================================================
 cdef np.ndarray[np.float64_t, ndim=2] initdat(int nmax):
@@ -82,6 +84,7 @@ cdef void plotdat(np.ndarray[np.float64_t, ndim=2] arr, int pflag, int nmax):
     x = np.arange(nmax)
     y = np.arange(nmax)
     cols = np.zeros((nmax,nmax))
+
     if pflag==1: # colour the arrows according to energy
         mpl.rc('image', cmap='rainbow')
         cols = matrix_energy(arr, nmax)
@@ -197,13 +200,13 @@ cdef float one_energy( np.ndarray[np.float64_t, ndim=2] arr, int ix, int iy, int
 # to the energy
 #
     cdef float ang = arr[ix,iy]-arr[ixp,iy]
-    en += 0.5*(1.0 - 3.0*np.cos(ang)**2)
+    en += 0.5*(1.0 - 3.0*cmath.cos(ang)**2)
     ang = arr[ix,iy]-arr[ixm,iy]
-    en += 0.5*(1.0 - 3.0*np.cos(ang)**2)
+    en += 0.5*(1.0 - 3.0*cmath.cos(ang)**2)
     ang = arr[ix,iy]-arr[ix,iyp]
-    en += 0.5*(1.0 - 3.0*np.cos(ang)**2)
+    en += 0.5*(1.0 - 3.0*cmath.cos(ang)**2)
     ang = arr[ix,iy]-arr[ix,iym]
-    en += 0.5*(1.0 - 3.0*np.cos(ang)**2)
+    en += 0.5*(1.0 - 3.0*cmath.cos(ang)**2)
     
     return en
 #=======================================================================
@@ -294,7 +297,7 @@ cdef float MC_step( np.ndarray[np.float64_t, ndim=2] arr, float Ts, int nmax):
             en0 = one_energy(arr,ix,iy,nmax)
             arr[ix,iy] += ang
             en1 = one_energy(arr,ix,iy,nmax)
-            boltz = np.exp( -(en1 - en0) / Ts )
+            boltz = cmath.exp( -(en1 - en0) / Ts )
             if en1<=en0 or boltz >= random_comparison[i,j]:
                 accept += 1
             else:
