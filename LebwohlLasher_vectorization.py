@@ -265,9 +265,7 @@ def MC_step(arr,Ts,nmax):
     yran = np.random.randint(0,high=nmax, size=(nmax,nmax))
     aran = np.random.normal(scale=scale, size=(nmax,nmax))
     random_comparison = np.random.uniform(0.0,1.0, size = (nmax,nmax))
-
-    points_picked = []
-    en0_matrix = matrix_energy(arr,nmax)
+    point_picked = np.zeros((nmax,nmax))
 
     #en0_matrix = 
     for i in range(nmax):
@@ -275,15 +273,9 @@ def MC_step(arr,Ts,nmax):
             ix = xran[i,j]
             iy = yran[i,j]
             ang = aran[i,j]
-
-            if f'{ix},{iy}' in points_picked:
-              en0_matrix[ix,iy] = one_energy(arr,ix,iy,nmax)
-            points_picked.append(f'{ix},{iy}')
-            
-            en0 = en0_matrix[ix,iy]
+            en0 = one_energy(arr,ix,iy,nmax)
             arr[ix,iy] += ang
             en1 = one_energy(arr,ix,iy,nmax)
-
             boltz = np.exp( -(en1 - en0) / Ts )
             if en1<=en0 or boltz >= random_comparison[i,j]:
                 accept += 1
