@@ -31,7 +31,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 #=======================================================================
-def initdat(int nmax):
+cdef np.ndarray[np.float64_t, ndim=2] initdat(int nmax):
     """
     Arguments:
       nmax (int) = size of lattice to create (nmax,nmax).
@@ -49,7 +49,7 @@ def initdat(int nmax):
     arr = np.random.random_sample((nmax,nmax))*2.0*np.pi
     return arr
 #=======================================================================
-def plotdat(np.ndarray[np.float64_t, ndim=2] arr, int pflag, int nmax):
+cdef void plotdat(np.ndarray[np.float64_t, ndim=2] arr, int pflag, int nmax):
     """
     Arguments:
 	  arr (float(nmax,nmax)) = array that contains lattice data;
@@ -101,7 +101,7 @@ def plotdat(np.ndarray[np.float64_t, ndim=2] arr, int pflag, int nmax):
     ax.set_aspect('equal')
     plt.show()
 #=======================================================================
-def savedat( np.ndarray[np.float64_t, ndim=2] arr, int nsteps, float Ts, float runtime, ratio, energy, order, int nmax):
+cdef void savedat( np.ndarray[np.float64_t, ndim=2] arr, int nsteps, float Ts, float runtime, ratio, energy, order, int nmax):
     """
     Arguments:
 	  arr (float(nmax,nmax)) = array that contains lattice data;
@@ -140,7 +140,7 @@ def savedat( np.ndarray[np.float64_t, ndim=2] arr, int nsteps, float Ts, float r
         print("   {:05d}    {:6.4f} {:12.4f}  {:6.4f} ".format(i,ratio[i],energy[i],order[i]),file=FileOut)
     FileOut.close()
 #=======================================================================
-def matrix_energy(np.ndarray[np.float64_t, ndim=2] arr, int nmax):
+cdef np.ndarray[np.float64_t, ndim=2] matrix_energy(np.ndarray[np.float64_t, ndim=2] arr, int nmax):
     """
     Arguments:
 	  arr (float(nmax,nmax)) = array that contains lattice data;
@@ -172,7 +172,7 @@ def matrix_energy(np.ndarray[np.float64_t, ndim=2] arr, int nmax):
     return energy_matrix
 
 #=======================================================================
-def one_energy( np.ndarray[np.float64_t, ndim=2] arr, int ix, int iy, int nmax):
+cdef float one_energy( np.ndarray[np.float64_t, ndim=2] arr, int ix, int iy, int nmax):
     """
     Arguments:
 	  arr (float(nmax,nmax)) = array that contains lattice data;
@@ -207,7 +207,7 @@ def one_energy( np.ndarray[np.float64_t, ndim=2] arr, int ix, int iy, int nmax):
     
     return en
 #=======================================================================
-def all_energy( np.ndarray[np.float64_t, ndim=2] arr, int nmax):
+cdef float all_energy( np.ndarray[np.float64_t, ndim=2] arr, int nmax):
     """
     Arguments:
 	  arr (float(nmax,nmax)) = array that contains lattice data;
@@ -224,7 +224,7 @@ def all_energy( np.ndarray[np.float64_t, ndim=2] arr, int nmax):
 
     return enall
 #=======================================================================
-def get_order( np.ndarray[np.float64_t, ndim=2] arr, int nmax):
+cdef float get_order( np.ndarray[np.float64_t, ndim=2] arr, int nmax):
     """
     Arguments:
 	  arr (float(nmax,nmax)) = array that contains lattice data;
@@ -254,7 +254,7 @@ def get_order( np.ndarray[np.float64_t, ndim=2] arr, int nmax):
     eigenvalues,eigenvectors = np.linalg.eig(Qab)
     return eigenvalues.max()
 #=======================================================================
-def MC_step( np.ndarray[np.float64_t, ndim=2] arr, float Ts, int nmax):
+cdef float MC_step( np.ndarray[np.float64_t, ndim=2] arr, float Ts, int nmax):
     """
     Arguments:
 	  arr (float(nmax,nmax)) = array that contains lattice data;
