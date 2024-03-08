@@ -68,6 +68,13 @@ def plotdat(np.ndarray[np.float64_t, ndim=2] arr, int pflag, int nmax):
 	Returns:
       NULL
     """
+  
+    cdef  np.ndarray[np.float64_t, ndim=2] u
+    cdef  np.ndarray[np.float64_t, ndim=2] v
+    cdef  np.ndarray[np.float64_t, ndim=2] cols
+    cdef  np.ndarray[np.int64_t, ndim=1] x
+    cdef  np.ndarray[np.int64_t, ndim=1] y
+    
     if pflag==0:
         return
     u = np.cos(arr)
@@ -112,6 +119,8 @@ def savedat( np.ndarray[np.float64_t, ndim=2] arr, int nsteps, float Ts, float r
 	Returns:
 	  NULL
     """
+    cdef int i
+
     # Create filename based on current date and time.
     current_datetime = datetime.datetime.now().strftime("%a-%d-%b-%Y-at-%I-%M-%S%p")
     filename = "./outputs/LL-Output-{:s}.txt".format(current_datetime)
@@ -146,19 +155,19 @@ def matrix_energy(np.ndarray[np.float64_t, ndim=2] arr, int nmax):
     """
 
     # Shift array in both directions in x and y
-    arr_shifted_x_p = np.roll(arr, 1, axis=0)
-    arr_shifted_x_m = np.roll(arr, -1, axis=0)
-    arr_shifted_y_p = np.roll(arr, 1, axis=1)
-    arr_shifted_y_m = np.roll(arr, -1, axis=1)
+    cdef  np.ndarray[np.float64_t, ndim=2] arr_shifted_x_p = np.roll(arr, 1, axis=0)
+    cdef  np.ndarray[np.float64_t, ndim=2] arr_shifted_x_m = np.roll(arr, -1, axis=0)
+    cdef  np.ndarray[np.float64_t, ndim=2] arr_shifted_y_p = np.roll(arr, 1, axis=1)
+    cdef  np.ndarray[np.float64_t, ndim=2] arr_shifted_y_m = np.roll(arr, -1, axis=1)
 
     # Calculate contributions from each neighbour
-    en_x_p = 0.5 * (1.0 - 3.0 * np.cos(arr - arr_shifted_x_p) ** 2)
-    en_x_m = 0.5 * (1.0 - 3.0 * np.cos(arr - arr_shifted_x_m) ** 2)
-    en_y_p = 0.5 * (1.0 - 3.0 * np.cos(arr - arr_shifted_y_p) ** 2)
-    en_y_m = 0.5 * (1.0 - 3.0 * np.cos(arr - arr_shifted_y_m) ** 2)
+    cdef  np.ndarray[np.float64_t, ndim=2] en_x_p = 0.5 * (1.0 - 3.0 * np.cos(arr - arr_shifted_x_p) ** 2)
+    cdef  np.ndarray[np.float64_t, ndim=2] en_x_m = 0.5 * (1.0 - 3.0 * np.cos(arr - arr_shifted_x_m) ** 2)
+    cdef  np.ndarray[np.float64_t, ndim=2] en_y_p = 0.5 * (1.0 - 3.0 * np.cos(arr - arr_shifted_y_p) ** 2)
+    cdef  np.ndarray[np.float64_t, ndim=2] en_y_m = 0.5 * (1.0 - 3.0 * np.cos(arr - arr_shifted_y_m) ** 2)
 
     # Sum up the contributions from all neighbors
-    energy_matrix = en_x_p + en_x_m + en_y_p + en_y_m
+    cdef  np.ndarray[np.float64_t, ndim=2] energy_matrix = en_x_p + en_x_m + en_y_p + en_y_m
 
     return energy_matrix
 
@@ -178,16 +187,16 @@ def one_energy( np.ndarray[np.float64_t, ndim=2] arr, int ix, int iy, int nmax):
 	Returns:
 	  en (float) = reduced energy of cell.
     """
-    en = 0.0
-    ixp = (ix+1)%nmax # These are the coordinates
-    ixm = (ix-1)%nmax # of the neighbours
-    iyp = (iy+1)%nmax # with wraparound
-    iym = (iy-1)%nmax #
+    cdef float en = 0.0
+    cdef int ixp = (ix+1)%nmax # These are the coordinates
+    cdef int ixm = (ix-1)%nmax # of the neighbours
+    cdef int iyp = (iy+1)%nmax # with wraparound
+    cdef int iym = (iy-1)%nmax #
 #
 # Add together the 4 neighbour contributions
 # to the energy
 #
-    ang = arr[ix,iy]-arr[ixp,iy]
+    cdef float ang = arr[ix,iy]-arr[ixp,iy]
     en += 0.5*(1.0 - 3.0*np.cos(ang)**2)
     ang = arr[ix,iy]-arr[ixm,iy]
     en += 0.5*(1.0 - 3.0*np.cos(ang)**2)
@@ -195,6 +204,7 @@ def one_energy( np.ndarray[np.float64_t, ndim=2] arr, int ix, int iy, int nmax):
     en += 0.5*(1.0 - 3.0*np.cos(ang)**2)
     ang = arr[ix,iy]-arr[ix,iym]
     en += 0.5*(1.0 - 3.0*np.cos(ang)**2)
+    
     return en
 #=======================================================================
 def all_energy( np.ndarray[np.float64_t, ndim=2] arr, int nmax):
@@ -209,8 +219,8 @@ def all_energy( np.ndarray[np.float64_t, ndim=2] arr, int nmax):
 	  enall (float) = reduced energy of lattice.
     """
 
-    energies = matrix_energy(arr,nmax)
-    enall = np.sum(energies.flatten())
+    cdef np.ndarray[np.float64_t, ndim=2] energies = matrix_energy(arr,nmax)
+    cdef float enall = np.sum(energies.flatten())
 
     return enall
 #=======================================================================
@@ -226,13 +236,14 @@ def get_order( np.ndarray[np.float64_t, ndim=2] arr, int nmax):
 	Returns:
 	  max(eigenvalues(Qab)) (float) = order parameter for lattice.
     """
-    Qab = np.zeros((3,3))
-    delta = np.eye(3,3)
+    cdef np.ndarray[np.float64_t, ndim=2] Qab = np.zeros((3,3))
+    cdef np.ndarray[np.float64_t, ndim=2] delta = np.eye(3,3)
     #
     # Generate a 3D unit vector for each cell (i,j) and
     # put it in a (3,i,j) array.
     #
-    lab = np.vstack((np.cos(arr),np.sin(arr),np.zeros_like(arr))).reshape(3,nmax,nmax)
+    cdef np.ndarray[np.float64_t, ndim=3] lab = np.vstack((np.cos(arr),np.sin(arr),np.zeros_like(arr))).reshape(3,nmax,nmax)
+    cdef np.ndarray[np.float64_t, ndim=2] Q_tensor
 
     for a in range(3):
         for b in range(3):
@@ -264,15 +275,17 @@ def MC_step( np.ndarray[np.float64_t, ndim=2] arr, float Ts, int nmax):
     # using lots of individual calls.  "scale" sets the width
     # of the distribution for the angle changes - increases
     # with temperature.
-    scale=0.1+Ts
-    accept = 0
-    xran = np.random.randint(0,high=nmax, size=(nmax,nmax))
-    yran = np.random.randint(0,high=nmax, size=(nmax,nmax))
-    aran = np.random.normal(scale=scale, size=(nmax,nmax))
-    random_comparison = np.random.uniform(0.0,1.0, size = (nmax,nmax))
-    point_picked = np.zeros((nmax,nmax))
+    cdef float scale=0.1+Ts
+    cdef int accept = 0
 
-    #en0_matrix = 
+    cdef np.ndarray[np.int64_t, ndim=2] xran = np.random.randint(0,high=nmax, size=(nmax,nmax))
+    cdef np.ndarray[np.int64_t, ndim=2] yran = np.random.randint(0,high=nmax, size=(nmax,nmax))
+    cdef np.ndarray[double, ndim=2] aran = np.random.normal(scale=scale, size=(nmax,nmax))
+    cdef np.ndarray[double, ndim=2] random_comparison = np.random.uniform(0.0,1.0, size = (nmax,nmax))
+
+    cdef int i, j, ix, iy
+    cdef float ang, en0, en1, boltz
+
     for i in range(nmax):
         for j in range(nmax):
             ix = xran[i,j]
@@ -303,19 +316,28 @@ def main(str program, int nsteps, int nmax, float temp, int pflag):
       NULL
     """
     # Create and initialise lattice
-    lattice = initdat(nmax)
+    cdef np.ndarray[np.float64_t, ndim=2] lattice = initdat(nmax)
+
     # Plot initial frame of lattice
     plotdat(lattice,pflag,nmax)
+
     # Create arrays to store energy, acceptance ratio and order parameter
+    #cdef np.ndarray[np.float64_t, ndim=1] energy = np.zeros(nsteps+1,dtype=np.dtype)
+    #cdef np.ndarray[np.float64_t, ndim=1] ratio = np.zeros(nsteps+1,dtype=np.dtype)
+    #cdef np.ndarray[np.float64_t, ndim=1] order = np.zeros(nsteps+1,dtype=np.dtype)
     energy = np.zeros(nsteps+1,dtype=np.dtype)
     ratio = np.zeros(nsteps+1,dtype=np.dtype)
     order = np.zeros(nsteps+1,dtype=np.dtype)
+
     # Set initial values in arrays
     energy[0] = all_energy(lattice,nmax)
     ratio[0] = 0.5 # ideal value
     order[0] = get_order(lattice,nmax)
 
     # Begin doing and timing some MC steps.
+    cdef int it
+    #cdef float initial, final, runtime
+
     initial = time.time()
     for it in range(1,nsteps+1):
         ratio[it] = MC_step(lattice,temp,nmax)
