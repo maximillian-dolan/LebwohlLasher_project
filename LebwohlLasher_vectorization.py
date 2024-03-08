@@ -265,7 +265,9 @@ def MC_step(arr,Ts,nmax):
     yran = np.random.randint(0,high=nmax, size=(nmax,nmax))
     aran = np.random.normal(scale=scale, size=(nmax,nmax))
     random_comparison = np.random.uniform(0.0,1.0, size = (nmax,nmax))
-    point_picked = np.zeros((nmax,nmax))
+
+    points_picked = []
+    en0_matrix = matrix_energy(arr,nmax)
 
     #en0_matrix = 
     for i in range(nmax):
@@ -273,20 +275,21 @@ def MC_step(arr,Ts,nmax):
             ix = xran[i,j]
             iy = yran[i,j]
             ang = aran[i,j]
-            en0 = one_energy(arr,ix,iy,nmax)
+
+            if f'{ix},{iy}' in points_picked:
+              en0_matrix[ix,iy] = one_energy(arr,ix,iy,nmax)
+            points_picked.append(f'{ix},{iy}')
+            
+            en0 = en0_matrix[ix,iy]
             arr[ix,iy] += ang
             en1 = one_energy(arr,ix,iy,nmax)
-            if en1<=en0:
+
+            boltz = np.exp( -(en1 - en0) / Ts )
+            if en1<=en0 or boltz >= random_comparison[i,j]:
                 accept += 1
             else:
-            # Now apply the Monte Carlo test - compare
-            # exp( -(E_new - E_old) / T* ) >= rand(0,1)
-                boltz = np.exp( -(en1 - en0) / Ts )
-
-                if boltz >= random_comparison[i,j]:
-                    accept += 1
-                else:
-                    arr[ix,iy] -= ang
+                arr[ix,iy] -= ang
+                
     return accept/(nmax*nmax)
 #=======================================================================
 def main(program, nsteps, nmax, temp, pflag):
