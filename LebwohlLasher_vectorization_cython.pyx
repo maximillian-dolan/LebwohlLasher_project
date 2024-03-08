@@ -26,11 +26,12 @@ import sys
 import time
 import datetime
 import numpy as np
+cimport numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 #=======================================================================
-def initdat(nmax):
+def initdat(int nmax):
     """
     Arguments:
       nmax (int) = size of lattice to create (nmax,nmax).
@@ -41,10 +42,14 @@ def initdat(nmax):
 	Returns:
 	  arr (float(nmax,nmax)) = array to hold lattice.
     """
+
+    cdef:
+      np.ndarray[np.float64_t, ndim=2] arr 
+    
     arr = np.random.random_sample((nmax,nmax))*2.0*np.pi
     return arr
 #=======================================================================
-def plotdat(arr,pflag,nmax):
+def plotdat(np.ndarray[np.float64_t, ndim=2] arr, int pflag, int nmax):
     """
     Arguments:
 	  arr (float(nmax,nmax)) = array that contains lattice data;
@@ -89,7 +94,7 @@ def plotdat(arr,pflag,nmax):
     ax.set_aspect('equal')
     plt.show()
 #=======================================================================
-def savedat(arr,nsteps,Ts,runtime,ratio,energy,order,nmax):
+def savedat( np.ndarray[np.float64_t, ndim=2] arr, int nsteps, float Ts, float runtime, ratio, energy, order, int nmax):
     """
     Arguments:
 	  arr (float(nmax,nmax)) = array that contains lattice data;
@@ -126,7 +131,7 @@ def savedat(arr,nsteps,Ts,runtime,ratio,energy,order,nmax):
         print("   {:05d}    {:6.4f} {:12.4f}  {:6.4f} ".format(i,ratio[i],energy[i],order[i]),file=FileOut)
     FileOut.close()
 #=======================================================================
-def matrix_energy(arr,nmax):
+def matrix_energy(np.ndarray[np.float64_t, ndim=2] arr, int nmax):
     """
     Arguments:
 	  arr (float(nmax,nmax)) = array that contains lattice data;
@@ -158,7 +163,7 @@ def matrix_energy(arr,nmax):
     return energy_matrix
 
 #=======================================================================
-def one_energy(arr,ix,iy,nmax):
+def one_energy( np.ndarray[np.float64_t, ndim=2] arr, int ix, int iy, int nmax):
     """
     Arguments:
 	  arr (float(nmax,nmax)) = array that contains lattice data;
@@ -192,7 +197,7 @@ def one_energy(arr,ix,iy,nmax):
     en += 0.5*(1.0 - 3.0*np.cos(ang)**2)
     return en
 #=======================================================================
-def all_energy(arr,nmax):
+def all_energy( np.ndarray[np.float64_t, ndim=2] arr, int nmax):
     """
     Arguments:
 	  arr (float(nmax,nmax)) = array that contains lattice data;
@@ -209,7 +214,7 @@ def all_energy(arr,nmax):
 
     return enall
 #=======================================================================
-def get_order(arr,nmax):
+def get_order( np.ndarray[np.float64_t, ndim=2] arr, int nmax):
     """
     Arguments:
 	  arr (float(nmax,nmax)) = array that contains lattice data;
@@ -238,7 +243,7 @@ def get_order(arr,nmax):
     eigenvalues,eigenvectors = np.linalg.eig(Qab)
     return eigenvalues.max()
 #=======================================================================
-def MC_step(arr,Ts,nmax):
+def MC_step( np.ndarray[np.float64_t, ndim=2] arr, float Ts, int nmax):
     """
     Arguments:
 	  arr (float(nmax,nmax)) = array that contains lattice data;
@@ -284,7 +289,7 @@ def MC_step(arr,Ts,nmax):
                 
     return accept/(nmax*nmax)
 #=======================================================================
-def main(program, nsteps, nmax, temp, pflag):
+def main(str program, int nsteps, int nmax, float temp, int pflag):
     """
     Arguments:
 	  program (string) = the name of the program;
@@ -323,7 +328,7 @@ def main(program, nsteps, nmax, temp, pflag):
     print("{}: Size: {:d}, Steps: {:d}, T*: {:5.3f}: Order: {:5.3f}, Time: {:8.6f} s".format(program, nmax,nsteps,temp,order[nsteps-1],runtime))
     # Plot final frame of lattice and generate output file
     savedat(lattice,nsteps,temp,runtime,ratio,energy,order,nmax)
-    plotdat(lattice,pflag,nmax)
+    plotdat(lattice, pflag, nmax)
 #=======================================================================
 # Main part of program, getting command line arguments and calling
 # main simulation function.
