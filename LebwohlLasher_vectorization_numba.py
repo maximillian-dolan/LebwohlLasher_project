@@ -110,7 +110,7 @@ def savedat(arr,nsteps,Ts,runtime,ratio,energy,order,nmax):
     """
     # Create filename based on current date and time.
     current_datetime = datetime.datetime.now().strftime("%a-%d-%b-%Y-at-%I-%M-%S%p")
-    filename = "./outputs/LL-Output-{:s}.txt".format(current_datetime)
+    filename = "./outputs/vectorization_numba-{:d}_size-Output-{:s}.txt".format(nmax, current_datetime)
     FileOut = open(filename,"w")
     # Write a header with run parameters
     print("#=====================================================",file=FileOut)
@@ -159,6 +159,7 @@ def matrix_energy(arr,nmax):
     return energy_matrix
 
 #=======================================================================
+@numba.jit(nopython = True)
 def one_energy(arr,ix,iy,nmax):
     """
     Arguments:
@@ -284,8 +285,6 @@ def MC_step(arr,Ts,nmax):
                 arr[ix,iy] -= ang
                 
     return accept/(nmax*nmax)
-
-@numba.jit(nopython = False)
 #=======================================================================
 def main(program, nsteps, nmax, temp, pflag):
     """
