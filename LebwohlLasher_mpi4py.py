@@ -112,7 +112,7 @@ def savedat(arr,nsteps,Ts,runtime,ratio,energy,order,nmax):
     """
     # Create filename based on current date and time.
     current_datetime = datetime.datetime.now().strftime("%a-%d-%b-%Y-at-%I-%M-%S%p")
-    filename = "LL-Output-{:s}.txt".format(current_datetime)
+    filename = "./outputs/LL-Output-{:s}.txt".format(current_datetime)
     FileOut = open(filename,"w")
     # Write a header with run parameters
     print("#=====================================================",file=FileOut)
@@ -253,9 +253,10 @@ def MC_step(arr,Ts,nmax):
                     accept += 1
                 else:
                     arr[ix,iy] -= ang
-    return accept/(nmax*nmax)
+    
+    return accept
 #=======================================================================
-def main(program, nsteps, nmax, temp, pflag):
+def main(program, nsteps, nmax, temp, pflag, rank):
     """
     Arguments:
 	  program (string) = the name of the program;
@@ -268,33 +269,48 @@ def main(program, nsteps, nmax, temp, pflag):
     Returns:
       NULL
     """
-    # Create and initialise lattice
-    lattice = initdat(nmax)
-    # Plot initial frame of lattice
-    plotdat(lattice,pflag,nmax)
-    # Create arrays to store energy, acceptance ratio and order parameter
-    energy = np.zeros(nsteps+1,dtype=np.dtype)
-    ratio = np.zeros(nsteps+1,dtype=np.dtype)
-    order = np.zeros(nsteps+1,dtype=np.dtype)
-    # Set initial values in arrays
-    energy[0] = all_energy(lattice,nmax)
-    ratio[0] = 0.5 # ideal value
-    order[0] = get_order(lattice,nmax)
 
-    # Begin doing and timing some MC steps.
-    initial = time.time()
+    # Initialise mpi4py
+    #comm = MPI.COMM_WORLD
+    #rank = comm.Get_rank()
+    #size = comm.Get_size()
+
+    if rank == 0:
+        # Create and initialise lattice
+        lattice = initdat(nmax)
+        # Plot initial frame of lattice
+        plotdat(lattice,pflag,nmax)
+        # Create arrays to store energy, acceptance ratio and order parameter
+        energy = np.zeros(nsteps+1,dtype=np.dtype)
+        ratio = np.zeros(nsteps+1,dtype=np.dtype)
+        order = np.zeros(nsteps+1,dtype=np.dtype)
+        # Set initial values in arrays
+        energy[0] = all_energy(lattice,nmax)
+        ratio[0] = 0.5 # ideal value
+        order[0] = get_order(lattice,nmax)
+
+        # Begin doing and timing some MC steps.
+        initial = time.time()
+
     for it in range(1,nsteps+1):
-        ratio[it] = MC_step(lattice,temp,nmax)
+        
+        lattice = comm.bcast(lattice, root = 0) 
+
+        local_accept = MC_step(lattice,temp, int(nmax//np.sqrt(size)))
+        global_accept = comm.reduce(local_accept, op = MPI.SUM, root = 0)
+
+        ratio[it] = global_accept/nmax
         energy[it] = all_energy(lattice,nmax)
         order[it] = get_order(lattice,nmax)
-    final = time.time()
-    runtime = final-initial
     
     # Final outputs
-    print("{}: Size: {:d}, Steps: {:d}, T*: {:5.3f}: Order: {:5.3f}, Time: {:8.6f} s".format(program, nmax,nsteps,temp,order[nsteps-1],runtime))
-    # Plot final frame of lattice and generate output file
-    savedat(lattice,nsteps,temp,runtime,ratio,energy,order,nmax)
-    plotdat(lattice,pflag,nmax)
+    if rank == 0:
+        final = time.time()
+        runtime = final-initial
+        print("{}: Size: {:d}, Steps: {:d}, T*: {:5.3f}: Order: {:5.3f}, Time: {:8.6f} s".format(program, nmax,nsteps,temp,order[nsteps-1],runtime))
+        # Plot final frame of lattice and generate output file
+        savedat(lattice,nsteps,temp,runtime,ratio,energy,order,nmax)
+        plotdat(lattice,pflag,nmax)
 #=======================================================================
 # Main part of program, getting command line arguments and calling
 # main simulation function.
@@ -306,7 +322,13 @@ if __name__ == '__main__':
         SIZE = int(sys.argv[2])
         TEMPERATURE = float(sys.argv[3])
         PLOTFLAG = int(sys.argv[4])
-        main(PROGNAME, ITERATIONS, SIZE, TEMPERATURE, PLOTFLAG)
+
+        comm = MPI.COMM_WORLD
+        rank = comm.Get_rank()
+        size = comm.Get_size()
+
+        main(PROGNAME, ITERATIONS, SIZE, TEMPERATURE, PLOTFLAG, rank)
+
     else:
-        print("Usage: python {} <ITERATIONS> <SIZE> <TEMPERATURE> <PLOTFLAG>".format(sys.argv[0]))
+        print("Usage: mpiexec -n <NUM_PROCESSES> python {} <ITERATIONS> <SIZE> <TEMPERATURE> <PLOTFLAG>".format(sys.argv[0]))
 #=======================================================================
