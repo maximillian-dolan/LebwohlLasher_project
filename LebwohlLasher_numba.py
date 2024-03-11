@@ -113,7 +113,7 @@ def savedat(arr,nsteps,Ts,runtime,ratio,energy,order,nmax):
     """
     # Create filename based on current date and time.
     current_datetime = datetime.datetime.now().strftime("%a-%d-%b-%Y-at-%I-%M-%S%p")
-    filename = "./outputs/LL-Output-{:s}.txt".format(current_datetime)
+    filename = "./outputs/numba-{:d}_size-Output-{:s}.txt".format(nmax, current_datetime)
     FileOut = open(filename,"w")
     # Write a header with run parameters
     print("#=====================================================",file=FileOut)
@@ -130,6 +130,7 @@ def savedat(arr,nsteps,Ts,runtime,ratio,energy,order,nmax):
         print("   {:05d}    {:6.4f} {:12.4f}  {:6.4f} ".format(i,ratio[i],energy[i],order[i]),file=FileOut)
     FileOut.close()
 #=======================================================================
+@numba.jit(nopython = True)
 def one_energy(arr,ix,iy,nmax):
     """
     Arguments:
@@ -164,6 +165,7 @@ def one_energy(arr,ix,iy,nmax):
     en += 0.5*(1.0 - 3.0*np.cos(ang)**2)
     return en
 #=======================================================================
+@numba.jit(nopython = True)
 def all_energy(arr,nmax):
     """
     Arguments:
@@ -256,7 +258,7 @@ def MC_step(arr,Ts,nmax):
                     arr[ix,iy] -= ang
     return accept/(nmax*nmax)
 
-@numba.jit(nopython = False)
+#@numba.jit(nopython = False)
 #=======================================================================
 def main(program, nsteps, nmax, temp, pflag):
     """
