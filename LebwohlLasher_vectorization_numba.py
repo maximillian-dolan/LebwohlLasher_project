@@ -159,7 +159,7 @@ def matrix_energy(arr,nmax):
     return energy_matrix
 
 #=======================================================================
-@numba.jit(nopython = True)
+@numba.jit(nopython = True, cache = True)
 def one_energy(arr,ix,iy,nmax):
     """
     Arguments:
