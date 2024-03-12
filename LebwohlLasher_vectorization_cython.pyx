@@ -126,7 +126,7 @@ cdef void savedat( np.ndarray[np.float64_t, ndim=2] arr, int nsteps, float Ts, f
 
     # Create filename based on current date and time.
     current_datetime = datetime.datetime.now().strftime("%a-%d-%b-%Y-at-%I-%M-%S%p")
-    filename = "./outputs/LL-Output-{:s}.txt".format(current_datetime)
+    filename = "./outputs/vectorization_cython-{:d}_size-Output-{:s}.txt".format(nmax, current_datetime)
     FileOut = open(filename,"w")
     # Write a header with run parameters
     print("#=====================================================",file=FileOut)
